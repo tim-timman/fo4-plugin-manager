@@ -1,0 +1,36 @@
+﻿<Window x:Class="fo4_plugins_manager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:fo4_plugins_manager"
+        mc:Ignorable="d"
+        Title="Fallout 4 Plugin Manager" Height="530" Width="485" Loaded="Window_Loaded" MinWidth="200" MinHeight="250">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="35" />
+        </Grid.RowDefinitions>
+        <Grid Margin="10,10,10,0">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition Height="40" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="13" />
+                <ColumnDefinition Width="130" MinWidth="50" />
+            </Grid.ColumnDefinitions>
+            <ListBox x:Name="lbPlugins" Margin="0,0,0,0" Grid.RowSpan="3" />
+            <GridSplitter x:Name="gridSplitter" Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Stretch"/>
+            <Button x:Name="btnMoveUp" Content="▲" Grid.Row="0" Grid.Column="1" FontSize="10" Margin="0"/>
+            <Button x:Name="btnMoveDown" Content="▼" Grid.Row="2" Grid.Column="1" FontSize="10"/>
+            <Border BorderThickness="1" BorderBrush="#FFABADB3" Grid.Column="2" Grid.RowSpan="3">
+                <TextBlock x:Name="pluginInfo" TextWrapping="Wrap" Text="TextBlock" Padding="5"/>
+            </Border>
+        </Grid>
+        <Button Grid.Row="2" x:Name="btnSave" Content="Save" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Width="75" Height="20"/>
+        <Button Grid.Row="2" x:Name="btnReset" Content="Reset" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Height="20"/>
+    </Grid>
+</Window>
