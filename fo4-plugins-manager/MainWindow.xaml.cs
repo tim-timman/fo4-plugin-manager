@@ -161,19 +161,22 @@ namespace fo4_plugins_manager
             return pluginInfos.ToArray();
         }
 
-        private List<PluginInfo> plugins = new List<PluginInfo>() {
-            new PluginInfo() { Fixed = true, Active = true, Name = "Fallout4.esm" },
-            new PluginInfo() { Fixed = true, Active = true, Name = "DLCRobot.esm" },
-            new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop01.esm" },
-            new PluginInfo() { Fixed = true, Active = true, Name = "DLCCoast.esm" },
-            new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop02.esm" },
-            new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop03.esm" },
-            new PluginInfo() { Fixed = true, Active = true, Name = "DLCNukaWorld.esm" },
-        };
+        private List<PluginInfo> plugins = null;
 
         private void LoadStuff()
         {
             PopulatePaths();
+
+            plugins = new List<PluginInfo>() {
+                new PluginInfo() { Fixed = true, Active = true, Name = "Fallout4.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCRobot.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop01.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCCoast.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop02.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop03.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCNukaWorld.esm" },
+            };
+
             var pluginList = GetPluginList();
             plugins.AddRange(pluginList);
             
@@ -208,42 +211,166 @@ namespace fo4_plugins_manager
                 checkbox.Content = p.Name;
                 checkbox.IsChecked = p.Active;
                 checkbox.IsEnabled = !p.Fixed;
-                checkbox.Checked += Checkbox_Checked;
+                checkbox.Checked += Checkbox_CheckedChanged;
+                checkbox.Unchecked += Checkbox_CheckedChanged;
                 lbPlugins.Items.Add(checkbox);
             }
 
             lbPlugins.SelectionChanged += LbPlugins_SelectionChanged;
         }
 
-        private void LbPlugins_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private bool TryGetSelectedPlugin(out PluginInfo plugin, out int idx)
         {
-            var selection = lbPlugins.SelectedItem;
-            if (selection != null)
-            {
-                var checkbox = selection as CheckBox;
-                var plugin = plugins.Find(p => p.Name == (string)checkbox.Content);
+            idx = -1;
+            plugin = null;
 
-            }
+            var selection = lbPlugins.SelectedItem;
+            if (selection == null) return false;
+
+            var checkbox = selection as CheckBox;
+            idx = plugins.FindIndex(p => p.Name == (string)checkbox.Content);
+            plugin = plugins[idx];
+
+            return true;
         }
 
-        private void Checkbox_Checked(object sender, RoutedEventArgs e)
+        private void LbPlugins_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            int idx;
+            PluginInfo plugin;
+            if (!TryGetSelectedPlugin(out plugin, out idx)) return;
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"Author: {plugin.Author}");
+            sb.AppendLine($"Description: {plugin.Description}");
+            sb.AppendLine();
+            sb.AppendLine($"Type: {plugin.Type}");
+            sb.AppendLine($"Size: {plugin.Size} bytes");
+            sb.AppendLine($"Total records: {plugin.NumberOfRecords}");
+            sb.AppendLine();
+            sb.Append($"Masters:\n  {string.Join("\n  ", plugin.Masters)}");
+
+            pluginTextBlock.Text = sb.ToString();
+        }
+
+        private void Checkbox_CheckedChanged(object sender, RoutedEventArgs e)
         {
             var checkbox = sender as CheckBox;
             var plugin = plugins.Find(p => p.Name == (string)checkbox.Content);
             plugin.Active = checkbox.IsChecked ?? !plugin.Active;
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+       private void Swap<T>(List<T> array, int a, int b)
+        {
+            var tmp = array[a];
+            array[a] = array[b];
+            array[b] = tmp;
+        }
+
+        private void btnMoveUp_Click(object sender, RoutedEventArgs e)
+        {
+            int idx;
+            PluginInfo plugin;
+            if (!TryGetSelectedPlugin(out plugin, out idx)) return;
+
+            if (plugin.Fixed) return;
+            
+            for (var i = idx - 1; i >= 0; i--)
+            {
+                var p = plugins[i];
+                if (p.Fixed) return;
+                if (Array.Exists(plugin.Masters, s => s.ToLower() == p.Name.ToLower())) return;
+
+                if (p.Present)
+                {
+                    Swap(plugins, i, idx);
+                    var selectedIdx = lbPlugins.SelectedIndex;
+                    var selectedItem = lbPlugins.SelectedItem;
+                    lbPlugins.Items.RemoveAt(selectedIdx);
+                    lbPlugins.Items.Insert(selectedIdx - 1, selectedItem);
+                    lbPlugins.SelectedIndex = selectedIdx - 1;
+                    break;
+                }
+            }
+        }
+
+        private void btnMoveDown_Click(object sender, RoutedEventArgs e)
+        {
+            int idx;
+            PluginInfo plugin;
+            if (!TryGetSelectedPlugin(out plugin, out idx)) return;
+
+            if (plugin.Fixed) return;
+
+            for (var i = idx + 1; i < plugins.Count; i++)
+            {
+                var p = plugins[i];
+
+                if (p.Present)
+                {
+                    Swap(plugins, i, idx);
+                    var selectedIdx = lbPlugins.SelectedIndex;
+                    var selectedItem = lbPlugins.SelectedItem;
+                    lbPlugins.Items.RemoveAt(selectedIdx);
+                    lbPlugins.Items.Insert(selectedIdx + 1, selectedItem);
+                    lbPlugins.SelectedIndex = selectedIdx + 1;
+                    break;
+                }
+            }
+        }
+
+        private void btnReset_Click(object sender, RoutedEventArgs e)
+        {
+            plugins = null;
+            pluginTextBlock.Text = "";
+            foreach (var i in lbPlugins.Items) {
+                var cb = i as CheckBox;
+                cb.Checked -= Checkbox_CheckedChanged;
+                cb.Unchecked -= Checkbox_CheckedChanged;
+            }
+            lbPlugins.Items.Clear();
+
+            Init();
+        }
+
+        private void Init()
         {
             try
             {
                 LoadStuff();
                 DrawStuff();
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Environment.Exit(Environment.ExitCode);
             }
+        }
+
+        private void SaveStuff()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("# This file is used by the game to keep track of your downloaded content.");
+            sb.AppendLine("# Please do not modify this file.");
+            foreach (var p in plugins)
+            {
+                if (p.Fixed) continue;
+
+                if (p.Active) sb.Append("*");
+                sb.AppendLine(p.Name);
+            }
+
+            System.IO.File.WriteAllText(pluginListPath, sb.ToString());
+        }
+
+        private void btnSave_Click(object sender, RoutedEventArgs e)
+        {
+            SaveStuff();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            Init();
         }
     }
 }

@@ -24,13 +24,13 @@
             </Grid.ColumnDefinitions>
             <ListBox x:Name="lbPlugins" Margin="0,0,0,0" Grid.RowSpan="3" />
             <GridSplitter x:Name="gridSplitter" Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Stretch"/>
-            <Button x:Name="btnMoveUp" Content="▲" Grid.Row="0" Grid.Column="1" FontSize="10" Margin="0"/>
-            <Button x:Name="btnMoveDown" Content="▼" Grid.Row="2" Grid.Column="1" FontSize="10"/>
+            <Button x:Name="btnMoveUp" Content="▲" Grid.Row="0" Grid.Column="1" FontSize="10" Margin="0" Click="btnMoveUp_Click"/>
+            <Button x:Name="btnMoveDown" Content="▼" Grid.Row="2" Grid.Column="1" FontSize="10" Click="btnMoveDown_Click"/>
             <Border BorderThickness="1" BorderBrush="#FFABADB3" Grid.Column="2" Grid.RowSpan="3">
-                <TextBlock x:Name="pluginInfo" TextWrapping="Wrap" Text="TextBlock" Padding="5"/>
+                <TextBlock x:Name="pluginTextBlock" Padding="5" TextTrimming="CharacterEllipsis"/>
             </Border>
         </Grid>
-        <Button Grid.Row="2" x:Name="btnSave" Content="Save" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Width="75" Height="20"/>
-        <Button Grid.Row="2" x:Name="btnReset" Content="Reset" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Height="20"/>
+        <Button Grid.Row="2" x:Name="btnSave" Content="Save" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Width="75" Height="20" Click="btnSave_Click"/>
+        <Button Grid.Row="2" x:Name="btnReset" Content="Reset" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="75" Height="20" Click="btnReset_Click"/>
     </Grid>
 </Window>
