@@ -5,7 +5,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:fo4_plugins_manager"
         mc:Ignorable="d"
-        Title="Fallout 4 Plugin Manager" Height="530" Width="485" Loaded="Window_Loaded" MinWidth="200" MinHeight="250">
+        Title="Fallout 4 Plugin Manager" Height="530" Width="485" MinWidth="200" MinHeight="250">
+    <Window.Resources>
+        <DataTemplate x:Key="PluginTemplate">
+            <Grid IsEnabled="{Binding NotFixed}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="20" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="25" />
+                </Grid.ColumnDefinitions>
+                <CheckBox Grid.Column="0" IsChecked="{Binding Active, BindsDirectlyToSource=True}"
+                          HorizontalAlignment="Left" Click="CheckBox_Click" />
+                <TextBlock Grid.Column="1" Text="{Binding Name}" />
+                <TextBlock Grid.Column="2" Text="{Binding Index}" HorizontalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition />
@@ -22,7 +37,9 @@
                 <ColumnDefinition Width="13" />
                 <ColumnDefinition Width="130" MinWidth="50" />
             </Grid.ColumnDefinitions>
-            <ListBox x:Name="lbPlugins" Margin="0,0,0,0" Grid.RowSpan="3" />
+            <ListBox x:Name="lbPlugins" Margin="0" Grid.RowSpan="3" ItemsSource="{Binding Plugins}"
+                     Grid.IsSharedSizeScope="True" HorizontalContentAlignment="Stretch"
+                     ItemTemplate="{StaticResource PluginTemplate}" SelectionChanged="lbPlugins_SelectionChanged"  />
             <GridSplitter x:Name="gridSplitter" Grid.Column="1" Grid.Row="0" Grid.RowSpan="3" HorizontalAlignment="Stretch"/>
             <Button x:Name="btnMoveUp" Content="▲" Grid.Row="0" Grid.Column="1" FontSize="10" Margin="0" Click="btnMoveUp_Click"/>
             <Button x:Name="btnMoveDown" Content="▼" Grid.Row="2" Grid.Column="1" FontSize="10" Click="btnMoveDown_Click"/>

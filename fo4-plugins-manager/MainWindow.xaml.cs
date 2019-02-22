@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,9 +22,18 @@ namespace fo4_plugins_manager
     /// </summary>
     public partial class MainWindow : Window
     {
+        private List<PluginInfo> plugins { get; set; } = new List<PluginInfo>();
+        public ICollectionView Plugins { get; set; } = null;
+
         public MainWindow()
         {
             InitializeComponent();
+            DataContext = this;
+            
+            Plugins = CollectionViewSource.GetDefaultView(plugins);
+            Plugins.Filter = p => (p as PluginInfo).Present;
+
+            Init();
         }
 
         private string dataPath = null;
@@ -50,18 +61,20 @@ namespace fo4_plugins_manager
             );
         }
 
-        class PluginInfo
+        public class PluginInfo
         {
-            public long Size;
-            public bool Fixed;
-            public bool Active;
-            public bool Present;
-            public string Name;
-            public string Type;
-            public string Author;
-            public string Description;
-            public int NumberOfRecords;
-            public string[] Masters;
+            public long Size { get; set; }
+            public bool Fixed { get; set; }
+            public bool NotFixed { get { return !Fixed; } }
+            public bool Active { get; set; }
+            public bool Present { get; set; }
+            public string Index { get; set; }
+            public string Name { get; set; }
+            public string Type { get; set; }
+            public string Author { get; set; }
+            public string Description { get; set; }
+            public int NumberOfRecords { get; set; }
+            public string[] Masters { get; set; }
         }
 
         private PluginInfo GetPluginInfo(System.IO.FileInfo plugin)
@@ -161,24 +174,16 @@ namespace fo4_plugins_manager
             return pluginInfos.ToArray();
         }
 
-        private List<PluginInfo> plugins = null;
 
         private void LoadStuff()
         {
             PopulatePaths();
 
-            plugins = new List<PluginInfo>() {
-                new PluginInfo() { Fixed = true, Active = true, Name = "Fallout4.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCRobot.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop01.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCCoast.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop02.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop03.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCNukaWorld.esm" },
-            };
-
             var pluginList = GetPluginList();
-            plugins.AddRange(pluginList);
+            foreach (var p in pluginList)
+            {
+                plugins.Add(p);
+            }
             
             var presentPlugins = GetPlugins();
             // Merge 'em
@@ -200,45 +205,41 @@ namespace fo4_plugins_manager
                     plugins.Add(p);
                 }
             }
+            UpdateIndicies();
         }
 
-        private void DrawStuff()
+        private void UpdateIndicies()
         {
-            var presentPlugins = plugins.Where(p => p.Present);
-            foreach (var p in presentPlugins)
+            var idx = 0;
+            foreach (var p in plugins)
             {
-                var checkbox = new CheckBox();
-                checkbox.Content = p.Name;
-                checkbox.IsChecked = p.Active;
-                checkbox.IsEnabled = !p.Fixed;
-                checkbox.Checked += Checkbox_CheckedChanged;
-                checkbox.Unchecked += Checkbox_CheckedChanged;
-                lbPlugins.Items.Add(checkbox);
+                if (p.Active && p.Present)
+                {
+                    p.Index = (++idx).ToString("X2");
+                }
+                else
+                {
+                    p.Index = "";
+                }
             }
-
-            lbPlugins.SelectionChanged += LbPlugins_SelectionChanged;
         }
-
-        private bool TryGetSelectedPlugin(out PluginInfo plugin, out int idx)
+        
+        private bool TryGetSelectedPlugin(out PluginInfo plugin)
         {
-            idx = -1;
             plugin = null;
 
             var selection = lbPlugins.SelectedItem;
             if (selection == null) return false;
 
-            var checkbox = selection as CheckBox;
-            idx = plugins.FindIndex(p => p.Name == (string)checkbox.Content);
-            plugin = plugins[idx];
+            plugin = selection as PluginInfo;
 
             return true;
         }
 
-        private void LbPlugins_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void lbPlugins_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            int idx;
             PluginInfo plugin;
-            if (!TryGetSelectedPlugin(out plugin, out idx)) return;
+            if (!TryGetSelectedPlugin(out plugin)) return;
 
             var sb = new StringBuilder();
             sb.AppendLine($"Author: {plugin.Author}");
@@ -251,14 +252,7 @@ namespace fo4_plugins_manager
             sb.Append($"Masters:\n  {string.Join("\n  ", plugin.Masters)}");
 
             pluginTextBlock.Text = sb.ToString();
-        }
-
-        private void Checkbox_CheckedChanged(object sender, RoutedEventArgs e)
-        {
-            var checkbox = sender as CheckBox;
-            var plugin = plugins.Find(p => p.Name == (string)checkbox.Content);
-            plugin.Active = checkbox.IsChecked ?? !plugin.Active;
-        }
+       }
 
        private void Swap<T>(List<T> array, int a, int b)
         {
@@ -269,11 +263,12 @@ namespace fo4_plugins_manager
 
         private void btnMoveUp_Click(object sender, RoutedEventArgs e)
         {
-            int idx;
             PluginInfo plugin;
-            if (!TryGetSelectedPlugin(out plugin, out idx)) return;
+            if (!TryGetSelectedPlugin(out plugin)) return;
 
             if (plugin.Fixed) return;
+
+            var idx = plugins.IndexOf(plugin);
             
             for (var i = idx - 1; i >= 0; i--)
             {
@@ -284,11 +279,8 @@ namespace fo4_plugins_manager
                 if (p.Present)
                 {
                     Swap(plugins, i, idx);
-                    var selectedIdx = lbPlugins.SelectedIndex;
-                    var selectedItem = lbPlugins.SelectedItem;
-                    lbPlugins.Items.RemoveAt(selectedIdx);
-                    lbPlugins.Items.Insert(selectedIdx - 1, selectedItem);
-                    lbPlugins.SelectedIndex = selectedIdx - 1;
+                    UpdateIndicies();
+                    Plugins.Refresh();
                     break;
                 }
             }
@@ -296,11 +288,12 @@ namespace fo4_plugins_manager
 
         private void btnMoveDown_Click(object sender, RoutedEventArgs e)
         {
-            int idx;
             PluginInfo plugin;
-            if (!TryGetSelectedPlugin(out plugin, out idx)) return;
+            if (!TryGetSelectedPlugin(out plugin)) return;
 
             if (plugin.Fixed) return;
+
+            var idx = plugins.IndexOf(plugin);
 
             for (var i = idx + 1; i < plugins.Count; i++)
             {
@@ -309,11 +302,8 @@ namespace fo4_plugins_manager
                 if (p.Present)
                 {
                     Swap(plugins, i, idx);
-                    var selectedIdx = lbPlugins.SelectedIndex;
-                    var selectedItem = lbPlugins.SelectedItem;
-                    lbPlugins.Items.RemoveAt(selectedIdx);
-                    lbPlugins.Items.Insert(selectedIdx + 1, selectedItem);
-                    lbPlugins.SelectedIndex = selectedIdx + 1;
+                    UpdateIndicies();
+                    Plugins.Refresh();
                     break;
                 }
             }
@@ -321,24 +311,27 @@ namespace fo4_plugins_manager
 
         private void btnReset_Click(object sender, RoutedEventArgs e)
         {
-            plugins = null;
+            plugins.Clear();
             pluginTextBlock.Text = "";
-            foreach (var i in lbPlugins.Items) {
-                var cb = i as CheckBox;
-                cb.Checked -= Checkbox_CheckedChanged;
-                cb.Unchecked -= Checkbox_CheckedChanged;
-            }
-            lbPlugins.Items.Clear();
-
             Init();
         }
 
         private void Init()
         {
+            plugins.AddRange(new[] {
+                new PluginInfo() { Fixed = true, Active = true, Name = "Fallout4.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCRobot.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop01.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCCoast.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop02.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop03.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCNukaWorld.esm" }
+            });
+
             try
             {
                 LoadStuff();
-                DrawStuff();
+                Plugins.Refresh();
             }
             catch (Exception ex)
             {
@@ -371,6 +364,12 @@ namespace fo4_plugins_manager
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             Init();
+        }
+
+        private void CheckBox_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateIndicies();
+            Plugins.Refresh();
         }
     }
 }
