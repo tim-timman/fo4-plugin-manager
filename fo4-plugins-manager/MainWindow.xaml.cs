@@ -36,6 +36,30 @@ namespace fo4_plugins_manager
             Init();
         }
 
+        private void Init()
+        {
+            plugins.AddRange(new[] {
+                new PluginInfo() { Fixed = true, Active = true, Name = "Fallout4.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCRobot.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop01.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCCoast.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop02.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop03.esm" },
+                new PluginInfo() { Fixed = true, Active = true, Name = "DLCNukaWorld.esm" }
+            });
+
+            try
+            {
+                LoadStuff();
+                Plugins.Refresh();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Environment.Exit(Environment.ExitCode);
+            }
+        }
+
         private string dataPath = null;
         private string installPath = null;
         private string pluginListPath = null;
@@ -261,6 +285,22 @@ namespace fo4_plugins_manager
             array[b] = tmp;
         }
 
+        private void SaveStuff()
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("# This file is used by the game to keep track of your downloaded content.");
+            sb.AppendLine("# Please do not modify this file.");
+            foreach (var p in plugins)
+            {
+                if (p.Fixed) continue;
+
+                if (p.Active) sb.Append("*");
+                sb.AppendLine(p.Name);
+            }
+
+            System.IO.File.WriteAllText(pluginListPath, sb.ToString());
+        }
+
         private void btnMoveUp_Click(object sender, RoutedEventArgs e)
         {
             PluginInfo plugin;
@@ -309,60 +349,15 @@ namespace fo4_plugins_manager
             }
         }
 
-        private void btnReset_Click(object sender, RoutedEventArgs e)
-        {
-            plugins.Clear();
-            pluginTextBlock.Text = "";
-            Init();
-        }
-
-        private void Init()
-        {
-            plugins.AddRange(new[] {
-                new PluginInfo() { Fixed = true, Active = true, Name = "Fallout4.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCRobot.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop01.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCCoast.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop02.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCWorkshop03.esm" },
-                new PluginInfo() { Fixed = true, Active = true, Name = "DLCNukaWorld.esm" }
-            });
-
-            try
-            {
-                LoadStuff();
-                Plugins.Refresh();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                Environment.Exit(Environment.ExitCode);
-            }
-        }
-
-        private void SaveStuff()
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("# This file is used by the game to keep track of your downloaded content.");
-            sb.AppendLine("# Please do not modify this file.");
-            foreach (var p in plugins)
-            {
-                if (p.Fixed) continue;
-
-                if (p.Active) sb.Append("*");
-                sb.AppendLine(p.Name);
-            }
-
-            System.IO.File.WriteAllText(pluginListPath, sb.ToString());
-        }
-
         private void btnSave_Click(object sender, RoutedEventArgs e)
         {
             SaveStuff();
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void btnReset_Click(object sender, RoutedEventArgs e)
         {
+            plugins.Clear();
+            pluginTextBlock.Text = "";
             Init();
         }
 
