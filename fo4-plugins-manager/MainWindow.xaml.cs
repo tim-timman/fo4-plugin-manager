@@ -239,7 +239,7 @@ namespace fo4_plugins_manager
             {
                 if (p.Active && p.Present)
                 {
-                    p.Index = (++idx).ToString("X2");
+                    p.Index = (idx++).ToString("X2");
                 }
                 else
                 {
